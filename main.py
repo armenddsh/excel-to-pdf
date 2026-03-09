@@ -3,13 +3,17 @@ from win32com.client import Dispatch
 from pathlib import Path
 from glob import glob
 
+pdf_directory = Path("pdfs")
+if not pdf_directory.exists():
+    pdf_directory.mkdir()
+
 def main():
     """
     Convert Excel files to PDF
     
     Usage:
         uv run main.py -i input.xlsx
-        uv run main.py -d "directory_path"
+        uv run main.py -d "pdfs"
     """
     
     parser = argparse.ArgumentParser(description="Convert Excel files to PDF")
@@ -27,12 +31,13 @@ def convert(input_file: str, output_file: str):
     Convert Excel file to PDF
     """
     
+    print(f"Input file: {input_file}")
+    print(f"Output file: {output_file}")
+    
     if not Path(input_file).exists():
-        print(f"Input file '{input_file}' does not exist")
         return
     
     if Path(output_file).exists():
-        print(f"Output file '{output_file}' already exists")
         return
     
     excel = Dispatch("Excel.Application")
@@ -51,7 +56,8 @@ def convert_directory(directory: str):
     """
     excel_files = glob(f"{directory}/*.xlsx")
     for excel_file in excel_files:
-        convert(excel_file, excel_file.replace(".xlsx", ".pdf"))
+        output_file = Path.cwd() / pdf_directory / Path(excel_file).name.replace(".xlsx", ".pdf")
+        convert(excel_file, str(output_file))
 
 if __name__ == "__main__":
    
@@ -62,11 +68,8 @@ if __name__ == "__main__":
         if not input_path.exists():
             print(f"Error: Input file '{args.input}' not found")
             exit(1)
-        print(f"Input path: {input_path}")
-        output_path = input_path.with_suffix('.pdf')
-        print(f"Output path: {output_path}")
+        output_path = pdf_directory / input_path.name.replace(".xlsx", ".pdf")
         convert(str(input_path), str(output_path))
-        print(f"Successfully converted {input_path} to {output_path}")
     elif args.directory:
         input_path = Path.joinpath(Path.cwd(), Path(args.directory))
         if not input_path.exists():
