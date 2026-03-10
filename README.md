@@ -31,7 +31,33 @@ uv sync
 
 ## Usage
 
-### Convert a single Excel file
+### Simple Execution (Recommended)
+
+#### Windows Batch Script
+```bash
+convert.bat file.xlsx
+convert.bat directory
+```
+**Double-click usage:**
+- Double-click `convert.bat` and drag/drop files onto it
+- Or drag Excel files/folders directly onto `convert.bat`
+
+#### Interactive Windows Script (Double-click friendly)
+```bash
+convert_interactive.bat
+```
+- Double-click to open file/folder selection dialog
+- No command line arguments needed
+
+#### Bash Script
+```bash
+./convert.sh file.xlsx
+./convert.sh directory
+```
+
+### Direct Python Execution
+
+#### Convert a single Excel file
 
 ```bash
 uv run main.py -i input.xlsx
@@ -39,7 +65,7 @@ uv run main.py -i input.xlsx
 
 This will create `input.pdf` in the same directory.
 
-### Convert all Excel files in a directory
+#### Convert all Excel files in a directory
 
 ```bash
 uv run main.py -d "path/to/excel/files"
@@ -67,16 +93,23 @@ The conversion preserves the formatting, layout, and content of the original Exc
 
 - Microsoft Excel must be installed on the system
 - The Excel application runs invisibly in the background during conversion
-- Output PDF files will be created in the same directory as the input files
-- Existing PDF files will not be overwritten
 
 ## Example
 
 ```bash
-# Convert a single file
-uv run main.py -i financial_report.xlsx
+# Interactive double-click (Windows)
+convert_interactive.bat
 
-# Convert all files in a directory
+# Using batch script (Windows)
+convert.bat financial_report.xlsx
+convert.bat "C:\Documents\Spreadsheets"
+
+# Using bash script
+./convert.sh financial_report.xlsx
+./convert.sh excel_files
+
+# Direct Python execution
+uv run main.py -i financial_report.xlsx
 uv run main.py -d "C:\Documents\Spreadsheets"
 ```
 
