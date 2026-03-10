@@ -15,16 +15,14 @@ import os
 CURRENT_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(CURRENT_DIR))
 
-# Try to import required modules
 try:
-    from win32com.client import Dispatch
+    from excel_com import ExcelConversionError, convert_excel_to_pdf
 except ImportError:
-    print("Error: pywin32 is not installed")
-    print("Please run: uv add pywin32")
+    print("Error: required dependencies are not installed")
+    print("Please run: uv sync")
     input("Press Enter to exit...")
     sys.exit(1)
 
-# Conversion functions (included directly to avoid import issues)
 def convert(input_file: str, output_file: str):
     """
     Convert Excel file to PDF
@@ -48,54 +46,21 @@ def convert(input_file: str, output_file: str):
             print(f"Warning: Could not remove existing file '{output_path}': {e}")
             return False
     
-    excel = None
     try:
-        # Start Excel application
-        excel = Dispatch("Excel.Application")
-        excel.Visible = False
-        excel.DisplayAlerts = False
-        excel.AutomationSecurity = 1  # Disable security alerts
-        
-        # Try to open workbook with different parameters
-        try:
-            workbook = excel.Workbooks.Open(str(input_path), ReadOnly=True, UpdateLinks=0)
-        except Exception as open_error:
-            print(f"Error opening workbook: {open_error}")
-            # Try without ReadOnly flag
-            workbook = excel.Workbooks.Open(str(input_path), UpdateLinks=0)
-        
-        # Wait a moment for Excel to process
-        import time
-        time.sleep(0.5)
-        
-        # Save as PDF
-        workbook.ExportAsFixedFormat(0, str(output_path))  # 0 = xlTypePDF
-        workbook.Close(SaveChanges=False)
-        
+        convert_excel_to_pdf(input_path, output_path)
         return True
-        
-    except Exception as e:
+    except ExcelConversionError as e:
         error_msg = str(e)
         print(f"Error converting file: {error_msg}")
-        
+
         # Check for specific Excel errors
         if "Document not saved" in error_msg:
             print("This usually means:")
             print("1. The Excel file is already open")
             print("2. You don't have permission to save to the output location")
             print("3. The Excel file is corrupted or protected")
-        
+
         return False
-    finally:
-        # Always try to quit Excel properly
-        if excel:
-            try:
-                excel.Quit()
-                # Force garbage collection
-                import gc
-                gc.collect()
-            except:
-                pass
 
 def convert_directory(directory: str):
     """

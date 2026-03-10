@@ -1,7 +1,8 @@
 import argparse
-from win32com.client import Dispatch
 from pathlib import Path
 from glob import glob
+
+from excel_com import ExcelConversionError, convert_excel_to_pdf
 
 pdf_directory = Path("pdfs")
 if not pdf_directory.exists():
@@ -30,33 +31,34 @@ def convert(input_file: str, output_file: str):
     """
     Convert Excel file to PDF
     """
-    
-    print(f"Input file: {input_file}")
-    print(f"Output file: {output_file}")
-    
-    if not Path(input_file).exists():
-        return
-    
-    if Path(output_file).exists():
-        return
-    
-    excel = Dispatch("Excel.Application")
-    excel.Visible = False
-    excel.DisplayAlerts = False
-    
-    workbook = excel.Workbooks.Open(input_file)
-    workbook.SaveAs(output_file, FileFormat=57)  # 57 = PDF format
-    workbook.Close()
-    
-    excel.Quit()
+    input_path = Path(input_file).resolve()
+    output_path = Path(output_file).resolve()
+
+    print(f"Input file: {input_path}")
+    print(f"Output file: {output_path}")
+
+    if not input_path.exists():
+        print(f"Error: Input file '{input_path}' not found")
+        return False
+
+    if output_path.exists():
+        print(f"Skipping existing PDF: {output_path}")
+        return True
+
+    try:
+        convert_excel_to_pdf(input_path, output_path)
+        return True
+    except ExcelConversionError as exc:
+        print(f"Error converting file: {exc}")
+        return False
     
 def convert_directory(directory: str):
     """
     Convert all Excel files in a directory to PDF
     """
-    excel_files = glob(f"{directory}/*.xlsx")
+    excel_files = glob(f"{directory}/*.xlsx") + glob(f"{directory}/*.xls")
     for excel_file in excel_files:
-        output_file = Path.cwd() / pdf_directory / Path(excel_file).name.replace(".xlsx", ".pdf")
+        output_file = Path.cwd() / pdf_directory / Path(excel_file).with_suffix(".pdf").name
         convert(excel_file, str(output_file))
 
 if __name__ == "__main__":
@@ -68,8 +70,9 @@ if __name__ == "__main__":
         if not input_path.exists():
             print(f"Error: Input file '{args.input}' not found")
             exit(1)
-        output_path = pdf_directory / input_path.name.replace(".xlsx", ".pdf")
-        convert(str(input_path), str(output_path))
+        output_path = pdf_directory / input_path.with_suffix(".pdf").name
+        if not convert(str(input_path), str(output_path)):
+            exit(1)
     elif args.directory:
         input_path = Path.joinpath(Path.cwd(), Path(args.directory))
         if not input_path.exists():
