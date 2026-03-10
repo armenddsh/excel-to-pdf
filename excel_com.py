@@ -16,17 +16,23 @@ class ExcelConversionError(RuntimeError):
 
 def _create_excel_application():
     factories = (
-        ("dynamic.Dispatch", lambda: dynamic.Dispatch("Excel.Application")),
-        ("DispatchEx", lambda: DispatchEx("Excel.Application")),
         ("Dispatch", lambda: Dispatch("Excel.Application")),
+        ("DispatchEx", lambda: DispatchEx("Excel.Application")),
+        ("dynamic.Dispatch", lambda: dynamic.Dispatch("Excel.Application")),
     )
     errors: list[str] = []
 
     for label, factory in factories:
         try:
-            return factory()
-        except Exception as exc:  # pragma: no cover - depends on local Excel install
+            app = factory()
+            # Verify the object is functional by accessing Workbooks
+            _ = app.Workbooks
+            return app
+        except Exception as exc:
             errors.append(f"{label}: {exc}")
+            # Clean up the broken instance
+            with contextlib.suppress(Exception):
+                app.Quit()
 
     raise ExcelConversionError(
         "Unable to start Excel via COM. Tried: " + " | ".join(errors)
