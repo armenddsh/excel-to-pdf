@@ -33,17 +33,6 @@ def _create_excel_application():
     )
 
 
-def _set_excel_property(excel, name: str, value):
-    try:
-        setattr(excel, name, value)
-    except Exception as exc:
-        message = str(exc)
-        if name == "Visible" and "Visibile" in message and "cannot be set" in message:
-            # Some broken Excel COM wrappers expose a misspelled setter. Hidden is the
-            # default, so the conversion can proceed without forcing visibility.
-            return
-        raise
-
 
 def convert_excel_to_pdf(input_file: str | Path, output_file: str | Path) -> Path:
     input_path = Path(input_file).resolve()
@@ -54,17 +43,19 @@ def convert_excel_to_pdf(input_file: str | Path, output_file: str | Path) -> Pat
     pythoncom.CoInitialize()
     try:
         excel = _create_excel_application()
-        _set_excel_property(excel, "Visible", False)
-        _set_excel_property(excel, "DisplayAlerts", False)
 
-        with contextlib.suppress(Exception):
-            _set_excel_property(
-                excel, "AutomationSecurity", MSO_AUTOMATION_SECURITY_FORCE_DISABLE
-            )
-        with contextlib.suppress(Exception):
-            _set_excel_property(excel, "EnableEvents", False)
-        with contextlib.suppress(Exception):
-            _set_excel_property(excel, "ScreenUpdating", False)
+        # All property sets are optional — suppress failures so a broken or
+        # restricted COM wrapper (e.g. different Excel version on a remote
+        # machine) does not prevent the actual conversion.
+        for prop, val in (
+            ("Visible", False),
+            ("DisplayAlerts", False),
+            ("AutomationSecurity", MSO_AUTOMATION_SECURITY_FORCE_DISABLE),
+            ("EnableEvents", False),
+            ("ScreenUpdating", False),
+        ):
+            with contextlib.suppress(Exception):
+                setattr(excel, prop, val)
 
         try:
             workbook = excel.Workbooks.Open(
@@ -86,14 +77,7 @@ def convert_excel_to_pdf(input_file: str | Path, output_file: str | Path) -> Pat
     except ExcelConversionError:
         raise
     except Exception as exc:
-        message = str(exc)
-        if "Visibile" in message and "cannot be set" in message:
-            raise ExcelConversionError(
-                "Excel rejected the Visible property because of a broken COM wrapper. "
-                "The converter now uses dynamic dispatch, but an old generated wrapper "
-                "may still be interfering. Close Excel and retry."
-            ) from exc
-        raise ExcelConversionError(message) from exc
+        raise ExcelConversionError(str(exc)) from exc
     finally:
         if workbook is not None:
             with contextlib.suppress(Exception):

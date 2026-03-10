@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls C:/Repositories/excel-to-pdf/*.py)",
+      "Bash(python -c \"import win32com.client; print\\(win32com.client.gencache.GetGeneratePath\\(\\)\\)\")",
+      "Bash(python3 -c \"import win32com.client; print\\(win32com.client.gencache.GetGeneratePath\\(\\)\\)\")"
+    ]
+  }
+}
